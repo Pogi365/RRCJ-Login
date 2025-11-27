@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | RRCJ</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+body{background:rgb(10, 1, 45);height:100vh;display:flex;justify-content:center;align-items:center}
+.container{width:360px;background:#fff;padding:35px 30px;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.15);animation:fadeIn 0.6s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+h2{text-align:center;margin-bottom:20px;font-weight:600;color:#333}
+input{width:100%;padding:12px;margin-top:13px;border-radius:8px;border:1px solid #ccc;font-size:14px}
+input:focus{border-color:#0062ff;outline:none;box-shadow:0 0 3px rgba(0,98,255,0.4)}
+button{width:100%;padding:12px;margin-top:20px;border:none;background:#0062ff;color:white;border-radius:8px;font-size:15px;cursor:pointer;font-weight:500;transition:.25s}
+button:hover{background:#004ccd}
+.password-wrapper{position:relative}
+.toggle-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;user-select:none;font-size:17px}
+p{text-align:center;margin-top:15px;font-size:14px}
+a{color:#0062ff;font-weight:500;text-decoration:none}
+a:hover{text-decoration:underline}
+.forgot-link{margin-top:8px;text-align:right;font-size:13px}
+#forgot-box{display:none;margin-top:15px}
+</style>
+</head>
+<body>
+<div class="container">
+    <form id="login-form">
+        <h2>RRCJ Login</h2>
+        <input type="email" id="login-email" placeholder="Email Address" required>
+        <div class="password-wrapper">
+            <input type="password" id="login-password" placeholder="Password" required>
+            <span id="toggle-login" class="toggle-eye"></span>
+        </div>
+        <div class="forgot-link">
+            <a href="#" id="open-forgot">Forgot Password?</a>
+        </div>
+        <button type="submit">Login</button>
+        <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+    </form>
+
+    <div id="forgot-box">
+        <h2>Reset Password</h2>
+        <input type="email" id="forgot-email" placeholder="Enter your email" required>
+        <button id="reset-btn">Send Reset Link</button>
+        <p><a href="#" id="back-to-login">Back to Login</a></p>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAxSVskTjLNwTIKYJoYJiSffY26dqK0qTE",
+    authDomain: "loginsystem-40c09.firebaseapp.com",
+    projectId: "loginsystem-40c09",
+    storageBucket: "loginsystem-40c09.appspot.com",
+    messagingSenderId: "307095420846",
+    appId: "1:307095420846:web:21682791cdf36fae2c923f"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+let loginAttempts = 0; 
+const maxAttempts = 3;
+
+
+document.getElementById("toggle-login").addEventListener("click", () => {
+    const p = document.getElementById("login-password");
+    p.type = p.type === "password" ? "text" : "password";
+});
+
+
+document.getElementById("open-forgot").addEventListener("click", () => {
+    document.getElementById("login-form").style.display = "none";
+    document.getElementById("forgot-box").style.display = "block";
+});
+
+// Back to login
+document.getElementById("back-to-login").addEventListener("click", () => {
+    document.getElementById("forgot-box").style.display = "none";
+    document.getElementById("login-form").style.display = "block";
+});
+
+// LOGIN FUNCTION
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    if(loginAttempts >= maxAttempts){
+        alert("Three attempts done! Check your email for alert warning.");
+        console.log(`Alert warning sent to ${email}`);
+        return;
+    }
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Login successful!");
+        loginAttempts = 0;
+        window.location.href = "dashboard.html";
+    } catch(err) {
+        loginAttempts++;
+        document.getElementById("login-password").value = ""; // Clear password field
+
+        // Determine if it's a wrong password
+        if(err.code === 'auth/wrong-password' || err.message.includes("password")){
+            alert(`Incorrect password. Attempt ${loginAttempts} of ${maxAttempts}`);
+        } else if(err.code === 'auth/user-not-found'){
+            alert("Email not found. Please sign up first.");
+        } else {
+            alert(err.message);
+        }
+
+        //if(loginAttempts >= maxAttempts){
+            //alert("Three attempts done! Check your email for alert warning.");
+            //console.log(`Alert warning sent to ${email}`);
+        //}
+    }
+});
+
+// FORGOT PASSWORD SEND LINK
+document.getElementById("reset-btn").addEventListener("click", async () => {
+    const email = document.getElementById("forgot-email").value.trim();
+    if(!email){
+        alert("Please enter your email.");
+        return;
+    }
+    try {
+        await sendPasswordResetEmail(auth, email);
+        alert("Reset link sent! Check your email inbox.");
+        document.getElementById("forgot-email").value = "";
+        document.getElementById("forgot-box").style.display = "none";
+        document.getElementById("login-form").style.display = "block";
+    } catch(err){
+        alert(err.message);
+    }
+});
+</script>
+</body>
+</html>
